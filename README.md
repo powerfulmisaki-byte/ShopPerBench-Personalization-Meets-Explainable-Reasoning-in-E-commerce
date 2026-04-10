@@ -1,267 +1,372 @@
 # 🛍️ ShopPerBench: Personalization Meets Explainable Reasoning in E-commerce
 
-<p align="center">
-  <b>The First Multi-Task Benchmark for Personalized E-commerce Reasoning Based on Real-World, Long-Horizon User Logs</b>
-</p>
+<div align="center">
 
-<p align="center">
-  <a href="#overview">Overview</a> •
-  <a href="#highlights">Highlights</a> •
-  <a href="#benchmark">Benchmark</a> •
-  <a href="#pipeline">BiWalker-Shop</a> •
-  <a href="#tasks">Tasks</a> •
-  <a href="#results">Results</a> •
-  <a href="#analysis">Analysis</a> •
-  <a href="#dataset">Dataset</a> •
-  <a href="#citation">Citation</a>
-</p>
+[![KDD 2025](https://img.shields.io/badge/Venue-KDD%202025-blue)](https://kdd.org/)
+[![License](https://img.shields.io/badge/License-ACM-green)](https://www.acm.org/)
+[![Data](https://img.shields.io/badge/Benchmark-7%2C965%20Instances-orange)](.)
+[![Tasks](https://img.shields.io/badge/Tasks-7-purple)](.)
+[![Models](https://img.shields.io/badge/LLMs%20Evaluated-17-red)](.)
 
----
+**Lulu Zhao · Zhengyang Wang · Xingyao Zhang · Xuefeng Chen · Wenbo Su**
 
-## 📌 Overview
+*Alibaba Group*
 
-Large language models (LLMs) are transforming e-commerce, yet **evaluating their reasoning in complex, long-term, and personalized shopping scenarios remains a critical challenge**. Existing benchmarks rely on isolated behaviors or simulated environments, failing to capture the causal logic of real-world interactions.
+> 📢 **Dataset will be released soon!**
 
-We introduce **ShopPerBench** — a benchmark built on **authentic, long-horizon user logs** (up to 12 months) from a production e-commerce engine (TaoBao). It systematically evaluates LLMs across 7 carefully designed tasks spanning product knowledge, user understanding, and personalized decision-making.
-
-> 💡 **Key Finding:** Even top-tier "Think" models (o4 mini, GPT-5, Gemini-3-flash) achieve a **peak average success rate of only 75.38%**, revealing critical gaps in personalized e-commerce reasoning.
+</div>
 
 ---
 
-## ✨ Highlights
+## 🔥 TL;DR
 
-- 🏪 **Real-World Data** — Built from production-level TaoBao user logs and product catalogs, not simulated environments
-- 📅 **Long-Horizon Modeling** — Captures user preference evolution across up to **12 months** of interaction history
-- 🕸️ **Dual-Domain Graph Architecture** — Couples Item Attribute Knowledge Graph (IA-KG) with User Behavior Profile Decision Tree (UBP)
-- 🧩 **7 Specialized Tasks** — Covering product knowledge, user modeling, and personalized recommendation
-- 📊 **7,965 High-Quality Instances** — With multi-stage expert review and quality control
-- 🤖 **17 SOTA LLMs Evaluated** — Including GPT-5, o4 mini, Gemini-3-flash, DeepSeek R1, Claude Sonnet4, Qwen3 series
-- 🔍 **Deep Reasoning Analysis** — Uncovers "strategic shortcuts", "reasoning overfitting", and cascading failure mechanisms
+**ShopPerBench** is the **first** multi-task benchmark for **personalized e-commerce reasoning**, built from real-world, long-horizon (up to 12 months) user interaction logs on TaoBao. We also introduce **BiWalker-Shop**, a graph-driven data synthesis pipeline that generates traceable, controllable reasoning trajectories. Evaluation of **17 state-of-the-art LLMs** shows even the best model (Gemini-3-flash) achieves only **75.38%** average accuracy — proving this is a genuinely hard, unsolved problem.
 
 ---
 
-## 📊 Benchmark Comparison
+## 📖 Abstract
 
-ShopPerBench fills a critical gap that existing benchmarks cannot address:
+Large language models (LLMs) are transforming e-commerce, yet evaluating their reasoning in complex, long-term, and personalized shopping scenarios remains a challenge. Existing benchmarks often rely on isolated behaviors or simulated environments, failing to capture the causal logic of real-world interactions.
 
-| Dataset | Instances | Tasks | Real-world | Reasoning | Long-term | Product Knowledge | User Behavior | Personalized |
-|---------|-----------|-------|------------|-----------|-----------|-------------------|---------------|--------------|
+We propose **ShopPerBench**, the first multi-task benchmark for personalized e-commerce reasoning based on authentic, long-horizon user logs. To construct it, we develop **BiWalker-Shop**, a graph-driven synthesis pipeline that integrates an *Item Attribute Knowledge Graph* with a *User Behavior Profile Decision Tree* to generate traceable reasoning trajectories across **seven tasks**.
+
+Evaluation of over **17 SOTA LLMs** shows that even top-tier "Think" models achieve a peak average success rate of only **75.38%**. We also uncover a critical **"strategic shortcut"** phenomenon and characterize how reasoning failures evolve from independent factual errors to cascading logical collapses.
+
+---
+
+## 🆚 Why ShopPerBench? Benchmark Comparison
+
+Unlike prior work, ShopPerBench is the **only** benchmark covering all critical dimensions for real-world personalized e-commerce reasoning:
+
+| Dataset | Instances | Tasks | Real-world | Reasoning | Long-term | Product Knowledge | User Behavior | Personalized Info |
+|---|---|---|---|---|---|---|---|---|
 | Amazon-M2 | 361,659 | 3 | ✅ | ❌ | ❌ | ❌ | Partial | ❌ |
 | Amazon-ESCI | 178,952 | 3 | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| EComInstruct-Test | 6,000 | 12 | ❌ | ❌ | ❌ | Partial | ❌ | ❌ |
 | ECInstruct | 9,253 | 10 | ❌ | ❌ | ❌ | Partial | ❌ | ❌ |
 | Shopping MMLU | 20,799 | 57 | ✅ | Partial | ❌ | Partial | Partial | ❌ |
+| ChineseEcomQA | 1,800 | 10 | ✅ | Partial | ❌ | ✅ | Partial | ❌ |
 | WebShop | 500 | 1 | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| DeepShop | 692 | 2 | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
 | ShoppingBench | 900 | 4 | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | **ShopPerBench (Ours)** | **7,965** | **7** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
----
-
-## 🏗️ BiWalker-Shop: Synthetic Data Pipeline
-
-<p align="center">
-  <img src="KDD_benchmark 2/pic/shopperbench.pdf" alt="BiWalker-Shop Pipeline" width="90%"/>
-  <br/>
-  <em>The BiWalker-Shop pipeline: solid circles represent products, dashed circles represent attributes.</em>
-</p>
-
-Our novel **BiWalker-Shop** framework is a graph-driven synthesis pipeline consisting of four components:
-
-### 1. IA-Knowledge Graph
-Built from a **trillion-scale item library**, the IA-Knowledge Graph `G = (I, A, E)` encodes fine-grained product taxonomies with:
-- **10,000+ unique item nodes** across 20+ major product categories
-- **50,000+ fine-grained attribute nodes** (brands, prices, specifications, etc.)
-- LLM-augmented annotation to align heterogeneous descriptors into a canonical vocabulary
-- Multi-stage privacy and safety audits
-
-### 2. UBP-Decision Tree
-A hierarchical user representation framework `T_u = (B_u, P_u)` with:
-- **Behavior Branch** `B_u`: Captures interaction sequences (Search, Click, Cart, Buy, Review) across multi-scale temporal windows (`<1 week`, `<1 month`, `>1 year`)
-- **Profile Branch** `P_u`: LLM-induced semantic features including user Interests, Roles ("parenting expert", "outdoor enthusiast"), and Core Preferences
-- **30,000+ anonymized users** with over **1 million raw interaction events**
-
-### 3. Dual-Domain Coupling & Walk Strategy
-Three **Bridge Modules** (`Intent`, `Need`, `Sentiment`) semantically couple the IA-KG and UBP-Decision Tree, enabling constrained meta-path walking:
-- **Reasoning depth**: 1–5 hops, controllable for task complexity
-- **Reasoning width**: Parallel path diversity for multi-constraint evaluation
-- Formal path slice: `ρ = (n₁, r₁, n₂, r₂, ..., nₖ)` where `k ∈ [1,5]`
-
-### 4. Quality Control
-- ✅ **Trajectory Authenticity**: Every path is a structural restoration of real interaction logs
-- ✅ **Distractor Criteria**: Logically plausible, difficulty-calibrated, uniqueness-guaranteed wrong options
-- ✅ **Expert Arbitration**: Multi-person, multi-round verification across 4 dimensions (real-world plausibility, linguistic specification, logical uniqueness, option homogeneity)
+> ShopPerBench is the only benchmark that simultaneously supports real-world data, reasoning evaluation, long-term preference modeling, product knowledge, user behavior, and personalized information.
 
 ---
 
-## 📋 Task Overview
+## 🗺️ Task Taxonomy
 
-<p align="center">
-  <img src="KDD_benchmark 2/pic/task_taxonomy.png" alt="Task Taxonomy" width="50%"/>
-  <br/>
-  <em>Task taxonomy of ShopPerBench across three core reasoning capabilities.</em>
-</p>
+ShopPerBench covers **7 specialized tasks** organized under **3 core reasoning capabilities**:
 
-ShopPerBench covers **7 tasks** across three capability domains:
+<div align="center">
+<img src="pic/task_taxonomy.png" width="420" alt="Task Taxonomy of ShopPerBench"/>
 
-| Task | Instances | Avg. Tokens | Avg. Hops | Capability Domain |
-|------|-----------|-------------|-----------|-------------------|
-| Product Attribute | 1,171 | 1,397 | 1.2 | Product Knowledge & Relation Reasoning |
-| Accessory Substitute | 917 | 1,297 | 2.1 | Product Knowledge & Relation Reasoning |
-| User Profiling | 821 | 3,139 | 2.4 | User Understanding & Behavior Modeling |
-| User Interest Prediction | 1,008 | 3,772 | 2.8 | User Understanding & Behavior Modeling |
-| User Intent Mining | 1,478 | 1,197 | 3.5 | Demand Recognition & Personalized Decision |
-| User Behavior Inference | 1,396 | 1,491 | 4.2 | Demand Recognition & Personalized Decision |
-| Personalized Recommendation | 1,174 | 1,223 | 4.7 | Demand Recognition & Personalized Decision |
+*Hierarchical taxonomy of ShopPerBench tasks across three core reasoning capability dimensions.*
+</div>
 
-> 📝 **Note**: User Profiling (3,139 avg. tokens) and User Interest Prediction (3,772 avg. tokens) are significantly more token-intensive, reflecting the challenge of aggregating long-term personalized behavioral sequences.
+### Three Capability Dimensions
+
+| Capability | Tasks |
+|---|---|
+| 🟠 **Product Knowledge & Relational Reasoning** | Product Attribute, Accessory Substitute |
+| 🟢 **User Understanding & Behavior Modeling** | User Profiling, User Behavior Inference |
+| 🔵 **Demand Recognition & Personalized Decision** | User Interest Prediction, User Intent Mining, Personalized Recommendation |
+
+### Task Details
+
+| Task | Instances | Avg. Tokens | Avg. Hops | Description |
+|---|---|---|---|---|
+| **Product Attribute** | 1,171 | 1,397.1 | 1.2 | Predict fine-grained product attributes from item descriptions |
+| **Accessory Substitute** | 917 | 1,297.0 | 2.1 | Find compatible accessories or substitutes given product context |
+| **User Profiling** | 821 | 3,138.6 | 2.4 | Aggregate long-term behaviors into a structured user profile |
+| **User Interest Prediction** | 1,008 | 3,771.6 | 2.8 | Predict user interests from behavioral sequences |
+| **User Intent Mining** | 1,478 | 1,197.1 | 3.5 | Infer implicit shopping intent from interaction patterns |
+| **User Behavior Inference** | 1,396 | 1,490.8 | 4.2 | Infer causal behavioral logic across multi-session history |
+| **Personalized Recommendation** | 1,174 | 1,223.1 | 4.7 | End-to-end recommendation fusing profile + product knowledge |
+| **Total** | **7,965** | — | — | — |
+
+> 📌 **Note**: User Profiling (3,138.6 tokens) and User Interest Prediction (3,771.6 tokens) have the highest average token counts, reflecting the complexity of aggregating months of behavioral data.
 
 ---
 
-## 🏆 Main Results
+## ⚙️ BiWalker-Shop: Data Synthesis Pipeline
 
-### Overall Performance of 17 LLMs
+<div align="center">
+<img src="pic/shopperbench_pipeline.png" width="900" alt="BiWalker-Shop Pipeline"/>
 
-| Model | Product Attr. | Access. Subst. | User Profiling | User Interest | User Intent | User Behavior | Pers. Recom. | **Avg.** |
-|-------|--------------|----------------|----------------|--------------|-------------|--------------|--------------|---------|
+*The BiWalker-Shop workflow. Solid circles = products; dashed circles = attributes.*
+</div>
+
+BiWalker-Shop is a **dual-domain coupled graph architecture** that generates fully traceable, controllable reasoning trajectories via four components:
+
+### 1. 📦 IA-Knowledge Graph (Item Attribute)
+Built from a **trillion-scale item library** from TaoBao's production engine:
+- Stratified sampling across **20+ major product categories** over **12 months**
+- **10,000+** unique item nodes and **50,000+** fine-grained attribute nodes
+- LLM-augmented annotation to unify heterogeneous descriptors
+- Formal definition: **G = (I, A, E)** — items, attributes, and typed logical relations
+
+### 2. 👤 UBP-Decision Tree (User Behavior Profile)
+A hierarchical representation of user knowledge with two core branches:
+- **User Behavior Branch**: Captures Search / Click / Cart / Buy / Review actions across multi-scale temporal windows (`< 1 week`, `< 1 month`, `> 1 year`)
+- **User Profile Branch**: LLM-extracted semantic features — Interests, User Roles (e.g., "parenting expert", "outdoor enthusiast"), Core Preferences
+- **30,000+** anonymized users with **1M+** raw interaction events
+- Formally: **T_u = (B_u, P_u)** per user
+
+### 3. 🔗 Coupling & Walk Strategy
+Three **Bridge Modules** (`m_intent`, `m_need`, `m_sent`) semantically connect the two graphs:
+- Reasoning trajectories sampled via **constrained meta-paths** (1–5 hops)
+- **Short paths (1–2 hops)**: product attribute prediction, interest mining
+- **Long paths (4–5 hops)**: end-to-end personalized recommendation
+- LLM transforms structured "reasoning path slices" into natural language QA pairs
+
+### 4. 🔍 Quality Control
+A four-stage quality assurance process:
+- **Trajectory Authenticity**: All reasoning chains extracted directly from real interaction logs
+- **Distractor Criteria**: Logically consistent, adjustable-difficulty, and uniqueness-guaranteed wrong options
+- **Difficulty Calibration**: Controlled via path depth (1–5 hops) and parallel constraint density
+- **Expert Arbitration**: Multi-person, multi-round human verification across 4 dimensions (plausibility, linguistic specification, logical uniqueness, option homogeneity)
+
+---
+
+## 📊 Main Results
+
+Performance of **17 leading LLMs** on ShopPerBench (accuracy %):
+
+| Model | Product Attribute | Accessory Substitute | User Profiling | User Interest Prediction | User Intent Mining | User Behavior Inference | Personalized Recommendation | **Avg.** |
+|---|---|---|---|---|---|---|---|---|
 | GPT-4o mini | 58.50 | 27.59 | 46.89 | 53.27 | 45.87 | 57.88 | 62.86 | 50.41 |
 | GPT-4o | 75.83 | 35.33 | 46.77 | 50.29 | 57.78 | 75.50 | 71.12 | 58.95 |
 | GPT-4.1 | 79.42 | 44.17 | 57.98 | 54.17 | 69.76 | 72.85 | 67.04 | 63.63 |
 | DeepSeek V3 | 71.91 | 37.51 | 61.39 | 60.42 | 66.78 | 80.80 | 67.63 | 63.78 |
-| Qwen3-235B-instruct | 78.99 | 49.95 | 59.32 | 73.31 | 74.15 | 82.16 | 67.38 | 69.32 |
+| Qwen3-30B-A3B-instruct | 73.45 | 37.84 | 59.93 | 74.21 | 72.33 | 80.44 | 64.74 | 66.13 |
+| Qwen3-235B-A22B-instruct | 78.99 | 49.95 | 59.32 | 73.31 | 74.15 | 82.16 | 67.38 | 69.32 |
 | o3 | **88.56** | 61.05 | 52.98 | 58.83 | 82.27 | 60.82 | 62.86 | 66.77 |
 | o4 mini | 88.39 | 57.69 | **62.97** | 75.49 | 88.36 | 85.33 | 68.19 | 75.20 |
 | GPT-5 | 87.25 | 60.51 | 60.89 | 70.91 | 89.76 | 85.22 | 67.34 | 74.55 |
 | DeepSeek R1 | 86.25 | 60.41 | 59.93 | 62.40 | 85.12 | **86.39** | 66.10 | 72.37 |
-| Qwen3-235B-think | 84.63 | **63.69** | 61.02 | 66.96 | **89.17** | 85.89 | 64.31 | 73.62 |
-| Claude Sonnet4 | 77.97 | 50.16 | 54.81 | 63.69 | 65.83 | 85.10 | 65.84 | 66.20 |
-| **Gemini-3-flash** | 85.36 | 65.67 | 61.35 | **82.33** | 73.86 | 83.15 | **75.92** | **75.38** |
+| Qwen3-14B | 84.71 | 54.85 | 58.47 | 66.96 | 83.76 | 71.56 | **72.74** | 70.44 |
+| Qwen3-32B | 83.16 | 50.27 | 59.32 | 64.09 | 85.12 | 76.43 | 72.49 | 70.13 |
+| Qwen3-30B-A3B-think | 81.04 | 58.02 | 54.45 | 69.54 | 87.96 | 82.66 | 70.27 | 71.99 |
+| Qwen3-235B-A22B-think | 84.63 | **63.69** | 61.02 | 66.96 | **89.17** | 85.89 | 64.31 | 73.62 |
+| Gemini-2.5-flash-lite | 72.92 | 32.38 | 62.00 | 80.06 | 68.47 | 79.73 | 69.42 | 66.43 |
+| **Gemini-3-flash** | 85.36 | 65.67 | 61.35 | **82.33** | 73.86 | 83.15 | 75.92 | **75.38** |
+| Claude Sonnet 4 | 77.97 | 50.16 | 54.81 | 63.69 | 65.83 | 85.10 | 65.84 | 66.20 |
 
-> 🥇 **Top performers**: Gemini-3-flash (75.38%), o4 mini (75.20%), GPT-5 (74.55%)  
-> 🔴 **Hardest task**: Accessory Substitute (avg. 50.19%) — even top models barely cross 65%
+### Key Findings
+- 🥇 **Top 3**: Gemini-3-flash (75.38%) > o4 mini (75.20%) > GPT-5 (74.55%)
+- 😰 **Hardest task**: Accessory Substitute (avg. 50.19% across all models)
+- 😅 **Easiest tasks**: Product Attribute (80.49%), User Behavior Inference (78.50%)
+- 📉 **Largest performance gap**: User Intent Mining spans 43.89 points (45.87–89.76%)
+- 📈 **Most saturated task**: Personalized Recommendation (narrowest range: 13.06 points)
+
+<div align="center">
+<img src="pic/reasoning_hops_optimized.png" width="640" alt="Performance vs Reasoning Hops — Overview"/>
+
+*Model performance across the 7 tasks, ordered by reasoning depth (hops). A clear difficulty gradient emerges from Product Attribute (1-hop) to Personalized Recommendation (5-hop).*
+</div>
 
 ---
 
-## 🔬 Key Analyses
+## 🔬 Analysis & Key Insights
 
-### RQ1: "Think" vs "No-Think" — Gain Asymmetry
+### RQ1: "Think" vs "No-Think" Models — Gain Asymmetry
 
-<p align="center">
-  <img src="KDD_benchmark 2/pic/radar_deepseek.png" alt="DeepSeek Think vs No-Think" width="28%"/>
-  <img src="KDD_benchmark 2/pic/radar_qwen3-235b-a22b.png" alt="Qwen3-235B Think vs No-Think" width="28%"/>
-  <img src="KDD_benchmark 2/pic/radar_qwen3-30b-a3b.png" alt="Qwen3-30B Think vs No-Think" width="28%"/>
-  <br/>
-  <em>Performance comparison of "Think" vs "No-Think" model versions: DeepSeek (left), Qwen3-235B (center), Qwen3-30B (right).</em>
-</p>
+<div align="center">
+<img src="pic/radar_deepseek.png" width="340" alt="DeepSeek R1 vs DeepSeek V3"/>
 
-A pronounced **"gain asymmetry"** emerges across model families:
+*DeepSeek R1 (Think) vs DeepSeek V3 (No-Think): radar chart across all 7 tasks.*
+</div>
 
-- ✅ **"Think" wins** on strongly constrained logical tasks (Product Attribute, Intent Mining, Accessory Substitute) — improvements up to **+18.94 points**
-- ❌ **"Think" loses** on preference-driven tasks (User Profiling, Interest Prediction) — models fall into **"Reasoning Overfitting"**, treating stochastic user preferences as deterministic causalities
+<div align="center">
 
-### RQ2: Crucial Capabilities for E-commerce Reasoning
+| Qwen3-235B-A22B: Think vs Instruct | Qwen3-30B-A3B: Think vs Instruct |
+|:---:|:---:|
+| <img src="pic/radar_qwen3-235b-a22b.png" width="380"/> | <img src="pic/radar_qwen3-30b-a3b.png" width="380"/> |
 
-<p align="center">
-  <img src="KDD_benchmark 2/pic/ds_7task_8tag_normalized_to_sum.png" alt="Counterfactual Importance Scores" width="60%"/>
-  <br/>
-  <em>Distribution of counterfactual importance scores across 7 tasks from DeepSeek R1's chain of thought.</em>
-</p>
+*Radar charts comparing Think and No-Think variants for Qwen3-235B-A22B (left) and Qwen3-30B-A3B (right).*
+</div>
 
-Using **Counterfactual Importance Scores (CIS)** on 100 correct reasoning traces per task, we identify two distinct thinking archetypes:
-- **Abstraction-Driven Reasoning** (User Profiling): Excels at pattern summarization but prone to overconfidence
-- **Alignment-Driven Reasoning** (User Interest Prediction): Focuses on logical validation but faces evidence brittleness
+A **pronounced gain asymmetry** is observed across all model families:
+
+- ✅ **"Think" models excel** at tasks with strong logical constraints (Product Attribute, Intent Mining, Accessory Substitute): improvements up to **+18.94 points**
+- ❌ **"Think" models regress** on preference-driven tasks (User Profiling, Interest Prediction): they fall into **"Reasoning Overfitting"** — constructing overly rigid explanations for stochastic user behaviors
+- 💡 Thinking is **not a universal performance multiplier** in e-commerce — it still faces the challenge of transitioning from "logic blind search" to "preference intuition alignment"
+
+---
+
+### RQ2: Crucial Capabilities — Two Reasoning Archetypes
+
+<div align="center">
+<img src="pic/ds_7task_8tag_normalized_to_sum.png" width="820" alt="Counterfactual Importance Scores"/>
+
+*Counterfactual Importance Scores (CIS) for DeepSeek R1's chain-of-thought, across 7 e-commerce tasks and 7 cognitive dimensions (normalized by task). Each bar represents the causal contribution of a reasoning category — higher = more critical "logical anchor"; lower = redundant pattern-matching shortcut.*
+</div>
+
+Using **Counterfactual Importance Score (CIS)** analysis on DeepSeek R1's reasoning traces, we identify two distinct thinking archetypes:
+
+| Archetype | Representative Task | Characteristics |
+|---|---|---|
+| **Abstraction-Driven Reasoning** | User Profiling | Plan-heavy, pattern summarization; prone to overconfidence traps |
+| **Alignment-Driven Reasoning** | User Interest Prediction | Fact-retrieval focused; faces evidence brittleness without uncertainty management |
+
+Notable insight: **Accessory Substitute** is the only task with significant weight in both Self-Correction AND Uncertainty Management — reflecting its high logical brittleness from lack of redundant information.
+
+---
 
 ### RQ3: Reasoning Complexity — The Knowledge Constraint Barrier
 
-<p align="center">
-  <img src="KDD_benchmark 2/pic/reasoning_hops_optimized.png" alt="Reasoning Hops Analysis" width="55%"/>
-  <br/>
-  <em>Performance evolution across reasoning hops (1–5) for various LLMs.</em>
-</p>
+<div align="center">
+<img src="pic/reasoning_hops_optimized.png" width="660" alt="Performance vs Reasoning Hops"/>
 
-A non-linear relationship between hops and accuracy reveals:
-- **2-hop barrier**: Despite low hop count, Accessory Substitute and User Profiling require dense domain knowledge — causing notable performance dips
-- **3-hop divergence**: "Think" models gain +30.58% over "No-Think" at the intent mining level
-- **5-hop ceiling**: Even advanced reasoning architectures struggle with 12-month history aggregation and multi-objective optimization
+*Performance evolution across reasoning hops (1–5) for all evaluated LLMs. Note the "Knowledge Constraint Barrier" at 2 hops and the peak Think/No-Think divergence at 3 hops.*
+</div>
 
-### RQ4: Ablation Studies
+Performance evolution across 1–5 reasoning hops reveals:
 
-<p align="center">
-  <img src="KDD_benchmark 2/pic/scale_up.png" alt="Scaling Analysis" width="55%"/>
-  <br/>
-  <em>Performance scaling from Qwen3 0.6B to 32B across seven tasks.</em>
-</p>
-
-**Temporal Window Analysis**: DeepSeek R1 maintains accuracy at 62.1% even at 18-month history (vs. V3's decline to 58.46%), demonstrating superior long-horizon preference modeling.
-
-**Bridge Module Ablation**: Bridge modules yield consistent gains across all tasks:
-- User Intent Mining: +8.92% (80.25 → 89.17)
-- User Behavior Inference: +7.63%  
-- Personalized Recommendation: **+8.33%** (55.98 → 64.31)
-
-### RQ5: Strategic Shortcuts & Cascading Failure Mechanisms
-
-<p align="center">
-  <img src="KDD_benchmark 2/pic/thinking_process_distribution_new.png" alt="Thinking Process Distribution" width="45%"/>
-  <img src="KDD_benchmark 2/pic/human_evaluation.png" alt="Human Evaluation Error Types" width="45%"/>
-  <br/>
-  <em>Left: Count distribution of sub-tasks during the thinking process. Right: Statistical distribution of error types via manual annotation.</em>
-</p>
-
-A critical **"strategic shortcut"** pattern emerges: LLMs systematically bypass deep User Profile Construction in favor of shallow need-product pattern matching. This leads to:
-
-- **Independent failures** in User Profiling: Isolated summarization errors (User Behavior Summary: 28.51%)
-- **Cascading collapses** in Personalized Recommendation: Misinterpretations amplify through Comparative Reasoning (35.65%) → User Behavior Summary (34.11%) → Uncertainty Management collapse (21.71%)
-
-> 🔑 **Conclusion**: Reasoning failures in e-commerce are not accidental — they are the inevitable consequence of strategic shortcuts that bypass structural persona abstraction.
+- 🚧 **Knowledge Constraint Barrier at 2 hops**: Despite low hop count, tasks like Accessory Substitute require dense domain knowledge → dramatic performance dip for all models
+- 🚀 **Peak reasoning gap at 3 hops**: "Think" vs "No-Think" divergence reaches **+30.58%** (e.g., Qwen3-235B-A22B Think vs GPT-4o)
+- 📉 **Convergence at 5 hops**: Long-horizon aggregation + multi-objective optimization challenges even the best reasoning architectures
 
 ---
 
-## 📁 Dataset & Code
+### RQ4: Ablation Study — Temporal Windows & Bridge Modules
 
-> 🚀 **Dataset and code will be released soon!**
+<div align="center">
 
-The release will include:
-- 📦 Full ShopPerBench evaluation dataset (7,965 instances across 7 tasks)
-- 🏗️ BiWalker-Shop pipeline implementation
-- 📏 Evaluation scripts and leaderboard
-- 🤖 Baseline model inference scripts
+| Temporal Window Analysis | Bridge Module Ablation |
+|:---:|:---:|
+| <img src="pic/temporal_window_analysis.png" width="400"/> | <img src="pic/bridge_module_ablation.png" width="380"/> |
 
----
+*(Left) DeepSeek V3 vs R1 accuracy across increasing historical window sizes (1 week → 18 months). (Right) Performance gain from adding Intent / Need / Sentiment bridge modules across tasks.*
+</div>
 
-## 🗂️ Repository Structure
+#### Temporal Window Analysis
+- DeepSeek V3 suffers "gain attenuation" beyond 6 months (accuracy drops to 58.46 at 18 months)
+- DeepSeek R1 maintains stable accuracy of **62.1 at 18 months** — reasoning-enhanced models are better equipped for long-term temporal dependencies
 
-```
-ShopPerBench/
-├── data/                      # Benchmark dataset (7 task files)
-│   ├── product_attribute.json
-│   ├── accessory_substitute.json
-│   ├── user_profiling.json
-│   ├── user_interest_prediction.json
-│   ├── user_intent_mining.json
-│   ├── user_behavior_inference.json
-│   └── personalized_recommendation.json
-├── pipeline/                  # BiWalker-Shop synthesis pipeline
-│   ├── ia_knowledge_graph/    # IA-KG construction
-│   ├── ubp_decision_tree/     # UBP-DT construction
-│   ├── coupling_walk/         # Dual-domain coupling & path walking
-│   └── quality_control/       # Multi-stage QC scripts
-├── evaluation/                # Evaluation scripts
-│   ├── eval.py
-│   └── metrics.py
-├── baselines/                 # Baseline inference scripts
-└── README.md
-```
+#### Bridge Module Ablation
+
+The "Bridge Modules" (Intent, Need, Sentiment) are critical semantic connectors:
+
+| Task | Without Bridge | With Bridge | Improvement |
+|---|---|---|---|
+| User Intent Mining | 80.25% | 89.17% | **+8.92%** |
+| User Behavior Inference | — | — | **+7.63%** |
+| Personalized Recommendation | 55.98% | 64.31% | **+8.33%** |
 
 ---
 
-## 📝 Citation
+### RQ5: Strategic Shortcuts & Reasoning Failure Evolution
 
-If you find ShopPerBench useful in your research, please cite our paper:
+<div align="center">
+<img src="pic/thinking_process_distribution_new.png" width="820" alt="Thinking Process Distribution"/>
+
+*Count distribution of five cognitive sub-tasks during the thinking process, across all 7 e-commerce reasoning tasks. User Need Identification (dark blue) dominates everywhere, while User Profile Construction (light blue) is nearly absent in complex tasks — exposing the "Strategic Shortcut."*
+</div>
+
+<div align="center">
+<img src="pic/human_evaluation.png" width="780" alt="Human Evaluation Error Types"/>
+
+*Distribution of error types via manual annotation. User Profiling failures are largely independent (summarization bottlenecks), while Personalized Recommendation failures cascade — any early misinterpretation collapses the entire chain.*
+</div>
+
+A **"Strategic Shortcut"** mechanism is exposed:
+
+- LLMs overwhelmingly rely on **User Need Identification** (dark blue) across all tasks
+- **User Profile Construction** (light blue) — the theoretical core of complex reasoning — is **nearly bypassed** in Personalized Recommendation and Interest Prediction
+- Models replace structural persona abstraction with shallow **"brute-force matching"** between immediate needs and product attributes
+
+This drives two distinct error evolution paths:
+- **User Profiling**: Failures are *independent* — primarily summarization bottlenecks (User Behavior Summary: 28.51%)
+- **Personalized Recommendation**: Failures are *cascading* — any early misinterpretation propagates through Comparative Reasoning (35.65%) → User Behavior Summary (34.11%) → Uncertainty Management collapse (21.71%)
+
+> **Key Takeaway**: Simply extending the thinking chain is **insufficient**. The fundamental issue is the lack of stable structural anchors for user personas.
+
+---
+
+### Scaling Analysis: Qwen3 0.6B → 32B
+
+<div align="center">
+<img src="pic/scale_up.png" width="720" alt="Scaling Performance Qwen3 0.6B to 32B"/>
+
+*Task-level performance as Qwen3 scales from 0.6B to 32B parameters. Structured tasks (Product Attribute, User Intent Mining) benefit consistently from scale, while dynamic signal tasks (User Interest Prediction, User Behavior Inference) exhibit non-monotonic trends.*
+</div>
+
+- **Product Attribute** and **User Intent Mining** scale most robustly with model size
+- **Accessory Substitute** peaks at 14B, then slightly declines at 32B
+- **User Interest Prediction** is unstable — peaks at 1.7B and 8B, declining with further scaling
+- **Personalized Recommendation** plateaus beyond 14B → larger models struggle with long-horizon dynamic signals
+
+---
+
+## 📐 Data Statistics
+
+| Metric | Value |
+|---|---|
+| Total instances | **7,965** |
+| Product categories | **20+** |
+| Observation period | **12 months** |
+| IA-KG item nodes | **10,000+** |
+| IA-KG attribute nodes | **50,000+** |
+| Anonymized users in UBP | **30,000+** |
+| Raw interaction events | **1,000,000+** |
+| Reasoning depth range | **1–5 hops** |
+
+---
+
+## 🏆 Key Contributions
+
+1. **ShopPerBench** — The first multi-task complex e-commerce reasoning benchmark based on real-world, long-term scenarios (up to 12 months), modeling interactions between personalized user information and product knowledge.
+
+2. **BiWalker-Shop** — A highly scalable and interpretable data synthesis framework using a dual-domain coupled graph to generate traceable, controllable reasoning trajectories.
+
+3. **Multi-dimensional LLM Analysis** — Uncovering the "strategic shortcut" mechanism, characterizing how reasoning failures evolve from independent factual errors to cascading logical collapses, providing concrete directions for optimizing e-commerce reasoning.
+
+---
+
+## 🔍 Experimental Setup
+
+### Evaluated Models
+
+**"Think" models:**
+- Closed-source: o3, o4 mini, Gemini-2.5-flash-lite, Gemini-3-flash, Claude 4 Sonnet, GPT-5
+- Open-source: DeepSeek R1, Qwen3-14B (think), Qwen3-32B (think), Qwen3-235B-A22B-think, Qwen3-30B-A3B-think
+
+**"No-Think" models:**
+- Closed-source: GPT-5, GPT-4.1, GPT-4o, GPT-4o mini
+- Open-source: DeepSeek V3, Qwen3-235B-A22B-instruct, Qwen3-30B-A3B-instruct
+
+### Inference Hyperparameters
+
+| Parameter | Value |
+|---|---|
+| Temperature | 0.7 |
+| Top-k | 20 |
+| Top-p | 0.8 |
+| Max new tokens | 30,000 |
+| Context limit | 45,000 |
+
+---
+
+## 🛡️ Ethics & Privacy
+
+- All data originates from **anonymized production logs** with multi-stage de-identification
+- PII is replaced with randomly generated hash identifiers
+- Temporal information is re-indexed into relative windows
+- **Bias-aware expert review** audits for demographic stereotypes in reasoning paths
+- Balanced sampling across demographic dimensions to prevent skewed heuristics
+
+---
+
+## 📚 Citation
 
 ```bibtex
 @inproceedings{zhao2025shopperbench,
   title     = {ShopPerBench: Personalization Meets Explainable Reasoning in E-commerce},
   author    = {Zhao, Lulu and Wang, Zhengyang and Zhang, Xingyao and Chen, Xuefeng and Su, Wenbo},
-  booktitle = {Proceedings of the ACM SIGKDD International Conference on Knowledge Discovery and Data Mining (KDD)},
+  booktitle = {Proceedings of the ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
   year      = {2025},
   publisher = {ACM}
 }
@@ -269,22 +374,14 @@ If you find ShopPerBench useful in your research, please cite our paper:
 
 ---
 
-## 👥 Authors
+## 📬 Contact
 
-- **Lulu Zhao** — Alibaba Group (zll476809@taobao.com)
-- **Zhengyang Wang** — Alibaba Group
-- **Xingyao Zhang** — Alibaba Group
-- **Xuefeng Chen** — Alibaba Group
-- **Wenbo Su** — Alibaba Group
+- **Lulu Zhao** — zll476809@taobao.com (Alibaba Group)
 
 ---
 
-## 📜 License
+<div align="center">
 
-This dataset is released for research purposes. All user data has been fully anonymized through multi-stage de-identification. No personally identifiable information (PII) is included.
+*"We hope ShopPerBench serves as a cornerstone for developing LLMs that truly understand user intent and deliver explainable shopping decisions."*
 
----
-
-<p align="center">
-  <em>ShopPerBench — Driving LLMs from merely "answering questions" to becoming shopping decision-makers that understand users, plan effectively, and explain their reasoning.</em>
-</p>
+</div>
