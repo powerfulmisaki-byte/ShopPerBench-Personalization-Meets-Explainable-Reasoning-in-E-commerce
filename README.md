@@ -194,30 +194,6 @@ Performance of **17 leading LLMs** on ShopPerBench (accuracy %):
 
 ---
 
-## 🔍 Experimental Setup
-
-### Evaluated Models
-
-**"Think" models:**
-- Closed-source: o3, o4 mini, Gemini-2.5-flash-lite, Gemini-3-flash, Claude 4 Sonnet, GPT-5
-- Open-source: DeepSeek R1, Qwen3-14B (think), Qwen3-32B (think), Qwen3-235B-A22B-think, Qwen3-30B-A3B-think
-
-**"No-Think" models:**
-- Closed-source: GPT-5, GPT-4.1, GPT-4o, GPT-4o mini
-- Open-source: DeepSeek V3, Qwen3-235B-A22B-instruct, Qwen3-30B-A3B-instruct
-
-### Inference Hyperparameters
-
-| Parameter | Value |
-|---|---|
-| Temperature | 0.7 |
-| Top-k | 20 |
-| Top-p | 0.8 |
-| Max new tokens | 30,000 |
-| Context limit | 45,000 |
-
----
-
 ## 🛡️ Ethics & Privacy
 
 - All data originates from **anonymized production logs** with multi-stage de-identification
